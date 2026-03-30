@@ -1,0 +1,17 @@
+node_modules/
+dist/
+dist-types/
+coverage/
+*.tgz
+.env
+app-config.local.yaml
+.DS_Store
+*.log
+
+# Yarn PnP
+.pnp.cjs
+.pnp.loader.mjs
+.yarn/cache
+.yarn/install-state.gz
+.yarn/unplugged
+.yarn/build-state.yml

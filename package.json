@@ -1,0 +1,19 @@
+{
+  "name": "backstage-plugin-kubernetes-actions-repo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "plugins/*"
+  ],
+  "scripts": {
+    "build": "yarn workspaces foreach -A run build",
+    "test": "yarn workspaces foreach -A run test",
+    "lint": "yarn workspaces foreach -A run lint",
+    "clean": "yarn workspaces foreach -A run clean"
+  },
+  "devDependencies": {
+    "@backstage/cli": "^0.36.0",
+    "typescript": "~5.8.0"
+  },
+  "packageManager": "yarn@4.4.1"
+}
