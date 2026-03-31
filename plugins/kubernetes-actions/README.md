@@ -154,9 +154,9 @@ Add the label selector annotation to any `Component` entity you want to expose:
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: my-laravel-app
+  name: my-service
   annotations:
-    backstage.io/kubernetes-label-selector: 'app=my-laravel-app'
+    backstage.io/kubernetes-label-selector: 'app=my-service'
 spec:
   type: service
   lifecycle: production
