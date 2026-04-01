@@ -47,6 +47,10 @@ export const kubernetesActionsPlugin = createBackendPlugin({
           path: '/pods/:namespace/:name',
           allow: 'unauthenticated',
         });
+        httpRouter.addAuthPolicy({
+          path: '/pods/:namespace/:name/logs',
+          allow: 'unauthenticated',
+        });
       },
     });
   },
