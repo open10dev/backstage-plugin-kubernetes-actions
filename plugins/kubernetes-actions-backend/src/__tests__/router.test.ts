@@ -21,10 +21,12 @@ jest.mock('../KubernetesActionsClient', () => ({
 
 const mockListPods = jest.fn();
 const mockDeletePod = jest.fn();
+const mockGetPodLogs = jest.fn();
 
 (KubernetesActionsClient as jest.Mock).mockImplementation(() => ({
   listPods: mockListPods,
   deletePod: mockDeletePod,
+  getPodLogs: mockGetPodLogs,
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -175,6 +177,61 @@ describe('DELETE /pods/:namespace/:name', () => {
 
     expect(res.status).toBe(500);
     expect(res.body.error).toBe('Pod not found');
+  });
+});
+
+describe('GET /pods/:namespace/:name/logs', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns 200 with log lines for authenticated user', async () => {
+    mockGetPodLogs.mockResolvedValue('line one\nline two\nline three\n');
+    const { app } = await buildApp();
+
+    const res = await request(app).get('/pods/default/my-app-abc123/logs');
+
+    expect(res.status).toBe(200);
+    expect(res.body.lines).toEqual(['line one', 'line two', 'line three']);
+  });
+
+  it('returns 401 when user is not authenticated', async () => {
+    const { app } = await buildApp(false);
+    const res = await request(app).get('/pods/default/my-app-abc123/logs');
+    expect(res.status).toBe(401);
+  });
+
+  it('passes container and tail params to the k8s client', async () => {
+    mockGetPodLogs.mockResolvedValue('log line\n');
+    const { app } = await buildApp();
+
+    await request(app).get('/pods/staging/my-app-abc123/logs?container=nginx&tail=50');
+
+    expect(mockGetPodLogs).toHaveBeenCalledWith('staging', 'my-app-abc123', {
+      container: 'nginx',
+      tailLines: 50,
+    });
+  });
+
+  it('returns 500 when the k8s client throws', async () => {
+    mockGetPodLogs.mockRejectedValue(new Error('container not found'));
+    const { app } = await buildApp();
+
+    const res = await request(app).get('/pods/default/my-app-abc123/logs');
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('container not found');
+  });
+
+  it('caps tail at 1000 lines', async () => {
+    mockGetPodLogs.mockResolvedValue('line\n');
+    const { app } = await buildApp();
+
+    await request(app).get('/pods/default/my-app-abc123/logs?tail=9999');
+
+    expect(mockGetPodLogs).toHaveBeenCalledWith(
+      'default',
+      'my-app-abc123',
+      expect.objectContaining({ tailLines: 1000 }),
+    );
   });
 });
 

@@ -90,7 +90,11 @@ function renderCard(entity: Entity, fetchImpl: typeof fetch) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('PodActionsCard', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // jsdom does not implement scrollIntoView
+    window.HTMLElement.prototype.scrollIntoView = jest.fn();
+  });
 
   it('shows a message when the entity has no kubernetes annotation', () => {
     renderCard(ENTITY_WITHOUT_SELECTOR, () => Promise.reject(new Error('no fetch expected')));
@@ -152,9 +156,9 @@ describe('PodActionsCard', () => {
       expect(screen.getByText('my-laravel-app-abc123')).toBeInTheDocument(),
     );
 
-    // All buttons = 1 Refresh + 1 delete per pod
+    // All buttons = 1 Refresh + 2 per pod (logs + delete)
     const allButtons = screen.getAllByRole('button');
-    expect(allButtons).toHaveLength(MOCK_POD_LIST.items.length + 1);
+    expect(allButtons).toHaveLength(MOCK_POD_LIST.items.length * 2 + 1);
   });
 
   it('opens a confirmation dialog when the delete button is clicked', async () => {
@@ -171,8 +175,8 @@ describe('PodActionsCard', () => {
       expect(screen.getByText('my-laravel-app-abc123')).toBeInTheDocument(),
     );
 
-    // Skip the first button (Refresh); the rest are delete buttons per pod
-    const [, firstDeleteButton] = screen.getAllByRole('button');
+    // Buttons: [Refresh, Logs-pod1, Delete-pod1, Logs-pod2, Delete-pod2]
+    const [,, firstDeleteButton] = screen.getAllByRole('button');
     await userEvent.click(firstDeleteButton);
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -197,8 +201,8 @@ describe('PodActionsCard', () => {
       expect(screen.getByText('my-laravel-app-abc123')).toBeInTheDocument(),
     );
 
-    // Skip the first button (Refresh); the second is the first delete button
-    const [, firstDeleteButton] = screen.getAllByRole('button');
+    // Buttons: [Refresh, Logs-pod1, Delete-pod1, Logs-pod2, Delete-pod2]
+    const [,, firstDeleteButton] = screen.getAllByRole('button');
     await userEvent.click(firstDeleteButton);
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
 
@@ -233,8 +237,8 @@ describe('PodActionsCard', () => {
       expect(screen.getByText('my-laravel-app-abc123')).toBeInTheDocument(),
     );
 
-    // Skip the first button (Refresh); the second is the first delete button
-    const [, firstDeleteButton] = screen.getAllByRole('button');
+    // Buttons: [Refresh, Logs-pod1, Delete-pod1, Logs-pod2, Delete-pod2]
+    const [,, firstDeleteButton] = screen.getAllByRole('button');
     await userEvent.click(firstDeleteButton);
     // Dialog opens — click the "Delete" confirm button in the dialog
     await userEvent.click(screen.getByRole('button', { name: /^delete$/i }));

@@ -8,6 +8,12 @@ export interface ClusterConfig {
   skipTLSVerify: boolean;
 }
 
+/** Options for fetching pod logs */
+export interface PodLogsOptions {
+  container?: string;
+  tailLines?: number;
+}
+
 /** Slim representation of a Kubernetes Pod returned by the API */
 export interface KubernetesPod {
   metadata: {
@@ -62,6 +68,65 @@ export class KubernetesActionsClient {
     await this.request(`/api/v1/namespaces/${namespace}/pods/${name}`, {
       method: 'DELETE',
     });
+  }
+
+  /** Fetch the last N log lines from a pod container as plain text */
+  async getPodLogs(
+    namespace: string,
+    name: string,
+    options: PodLogsOptions = {},
+  ): Promise<string> {
+    const qs = new URLSearchParams();
+    if (options.container) qs.set('container', options.container);
+    qs.set('tailLines', String(options.tailLines ?? 100));
+
+    const res = await fetch(
+      `${this.cluster.url}/api/v1/namespaces/${namespace}/pods/${name}/log?${qs}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.cluster.token}`,
+          Accept: 'text/plain',
+        },
+        // @ts-ignore - undici Dispatcher for TLS config
+        dispatcher: this.dispatcher,
+      } as any,
+    );
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Kubernetes API error ${res.status}: ${body}`);
+    }
+
+    return res.text();
+  }
+
+  /** Start a streaming (follow) log request; returns the raw Response for SSE piping */
+  async streamPodLogs(
+    namespace: string,
+    name: string,
+    options: PodLogsOptions = {},
+  ): Promise<Response> {
+    const qs = new URLSearchParams({ follow: 'true' });
+    if (options.container) qs.set('container', options.container);
+    qs.set('tailLines', String(options.tailLines ?? 50));
+
+    const res = await fetch(
+      `${this.cluster.url}/api/v1/namespaces/${namespace}/pods/${name}/log?${qs}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.cluster.token}`,
+        },
+        // @ts-ignore - undici Dispatcher for TLS config
+        dispatcher: this.dispatcher,
+      } as any,
+    );
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Kubernetes API error ${res.status}: ${body}`);
+    }
+
+    return res;
   }
 
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
