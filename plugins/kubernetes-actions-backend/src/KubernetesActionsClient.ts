@@ -85,7 +85,6 @@ export class KubernetesActionsClient {
       {
         headers: {
           Authorization: `Bearer ${this.cluster.token}`,
-          Accept: 'text/plain',
         },
         // @ts-ignore - undici Dispatcher for TLS config
         dispatcher: this.dispatcher,
