@@ -37,8 +37,8 @@ export const kubernetesActionsPlugin = createBackendPlugin({
 
         httpRouter.use(router);
 
-        // Let the Backstage framework forward requests to our handler;
-        // we validate credentials manually inside each route.
+        // Pass all requests through to the router — credentials are
+        // validated manually inside each route handler via httpAuth.
         httpRouter.addAuthPolicy({
           path: '/pods',
           allow: 'unauthenticated',
